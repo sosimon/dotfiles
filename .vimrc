@@ -5,8 +5,11 @@ Plug 'arcticicestudio/nord-vim'
 Plug 'hashivim/vim-terraform'
 Plug 'terryma/vim-smooth-scroll'
 Plug 'martinda/Jenkinsfile-vim-syntax'
+Plug 'tpope/vim-surround'
+Plug 'tpope/vim-fugitive'
 call plug#end()
 
+set nocompatible
 syntax on
 filetype plugin indent on 
 " show existing tab with 2 spaces width
