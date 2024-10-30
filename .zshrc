@@ -77,13 +77,17 @@ ZSH_THEME="powerlevel10k/powerlevel10k"
 # Custom plugins may be added to $ZSH_CUSTOM/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
-plugins=(git zsh-autosuggestions zsh-z)
+plugins=(git zsh-autosuggestions zsh-z fzf-tab)
 
 source $ZSH/oh-my-zsh.sh
 
 # User configuration
 
 # export MANPATH="/usr/local/man:$MANPATH"
+export PATH=$HOME/bin:$HOME/.tfenv/bin:$PATH:/usr/local/go/bin:$HOME/go/bin:$HOME/.local/bin
+export GPG_TTY=$(tty)
+export USE_GKE_GCLOUD_AUTH_PLUGIN=True
+export PAGER=''
 
 # You may need to manually set your language environment
 # export LANG=en_US.UTF-8
@@ -109,6 +113,11 @@ source $ZSH/oh-my-zsh.sh
 alias ll="ls -lart"
 alias tf="terraform"
 alias k=kubectl
+alias gs="gcloud storage"
+alias gssh="gcloud compute ssh"
+alias lg="lazygit"
+alias git-clean='git fetch -p && for branch in $(git for-each-ref --format '\''%(refname) %(upstream:track)'\'' refs/heads | awk '\''$2 == "[gone]" {sub("refs/heads/", "", $1); print $1}'\''); do git branch -D $branch; done'
+alias takeover="tmux detach -a"
 
 #################
 # User Functions
@@ -123,6 +132,40 @@ function random_str() {
   cat /dev/urandom | env LC_CTYPE=C tr -dc 'a-zA-Z0-9' | fold -w 4 | head -n 1
 }
 
+# fd - cd to selected directory
+function fd() {
+  local dir
+  dir=$(find ${1:-.} -path '*/\.*' -prune -o -type d -print 2> /dev/null | fzf +m) && cd "$dir"
+}
+
+# fh - search in your command history and execute selected command
+function fh() {
+  eval $( ([ -n "$ZSH_NAME" ] && fc -l 1 || history) | fzf +s --tac | sed 's/ *[0-9]* *//')
+}
+
+function main(){
+  git checkout main
+  git pull
+}
+
+function rebase(){
+  local current_branch=$(git rev-parse --abbrev-ref HEAD)
+  echo "Current branch is ${current_branch}"
+  echo "Update main branch"
+  git checkout main
+  git pull
+  git checkout ${current_branch}
+  echo "Rebasing..."
+  git rebase main
+}
+
+function unset_all() {
+  unset GOOGLE_APPLICATION_CREDENTIALS
+  unset GOOGLE_IMPERSONATE_SERVICE_ACCOUNT
+  unset USER_PROJECT_OVERRIDE
+  unset GOOGLE_BILLING_PROJECT
+}
+
 source /usr/local/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
@@ -132,6 +175,20 @@ source ~/.iterm2_shell_integration.zsh
 
 export PATH="/usr/local/Cellar/openssl@1.1/1.1.1k/bin:$PATH"
 
+if [[ -n "$PS1" ]] && [[ -z "$TMUX" ]] && [[ -n "$SSH_CONNECTION" ]]; then
+  tmux attach
+fi
+
+[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+
+export PYENV_ROOT="$HOME/.pyenv"
+[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init -)"
+
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
+eval "$(atuin init zsh)"
+
+. "$HOME/.atuin/bin/env"
